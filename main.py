@@ -137,12 +137,27 @@ class TaxiDomain:
             print()
         print(f"Action: {self.last_action}  Result: {self.last_result}  Reward: {self.last_reward}")
         print(message)
+        
+    # def partA_1b():
+    def value_iteration(self, discount, epsilon):
+        delta=0
+        #states list? Transition T?
+        u_dash = {s: 0 for s in self.states}
+        while delta > epsilon*(1-discount)/discount:
+            delta=0
+            u=u_dash.copy()
+            for state in self.states:
+                for a in self.actions:
+                    for (probaility, state_1) in T(state_1, a):
+                        q_value=max(sum(probaility * u[state_1,1]))
+                u_dash[state] = state.last_reward + discount* q_value
+                if abs(u_dash[state]-u[state])>delta:
+                    delta = abs(u_dash[state]-u[state])
 
-# def partA_1b():
-
-# def partA_1c():
+        return u
 
 
+    # def partA_1c():        
 
 if __name__ == "__main__":
     grid = Grid(1)
