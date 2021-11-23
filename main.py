@@ -1,4 +1,5 @@
 import random
+import numpy as np
 
 class Grid:
 
@@ -142,15 +143,19 @@ class TaxiDomain:
     def value_iteration(self, discount, epsilon):
         delta=0
         #states list? Transition T?
-        u_dash = {s: 0 for s in self.states}
+        u_dash = np.zeros((5,5))
         while delta > epsilon*(1-discount)/discount:
             delta=0
-            u=u_dash.copy()
+            u=np.copy(u_dash)
             for state in self.states:
+                q_values=[]
                 for a in self.actions:
-                    for (probaility, state_1) in T(state_1, a):
-                        q_value=max(sum(probaility * u[state_1,1]))
-                u_dash[state] = state.last_reward + discount* q_value
+                    q=0
+                    for (probaility, state_next) in T(state_next, a):
+                        q+=probability*(self.last_reward + discount*u[state_next])
+                    q_values.append(q)
+                optimal_action= np.argmax(q_values)
+                u_dash[state] = q_values[optimal_action]
                 if abs(u_dash[state]-u[state])>delta:
                     delta = abs(u_dash[state]-u[state])
 
