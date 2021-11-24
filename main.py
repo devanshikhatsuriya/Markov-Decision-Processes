@@ -52,7 +52,7 @@ class TaxiDomain:
         
         passenger_in_taxi = False
         self.state = (taxi_loc, passenger_loc, passenger_in_taxi)
-        self.goal_state = (self.dest_loc, self.dest_loc, True)
+        self.goal_state = (self.dest_loc, self.dest_loc, False)
 
         self.all_states = set()
         self.state_to_index = {}
@@ -85,6 +85,8 @@ class TaxiDomain:
         '''
         probs = {}
         taxi_loc, passenger_loc, passenger_in_taxi = s
+        if s == self.goal_state: # no transitions take place from goal state
+            return probs
 
         if a in TaxiDomain.nav_actions:
             # initialize probablility of 0.05 in all directions
@@ -201,6 +203,8 @@ class TaxiDomain:
                     (note that reward does not depend on s', i.e., R(s, a, s') = R(s, a) for all s')
         '''
         taxi_loc, passenger_loc, passenger_in_taxi = s
+        if s == self.goal_state: # no rewards from goal state as no transitions take place from goal state
+            return 0
 
         if a in TaxiDomain.nav_actions:
             return -1
@@ -221,6 +225,8 @@ class TaxiDomain:
         '''
         next_state_probs = self.T(s, a)
         reward = self.R(s, a)
+        if s == self.goal_state: # no action can be taken on goal state
+            return (self.goal_state, 0)
 
         # sample a next state s' from the probability distribution
         next_state = random.choices(list(next_state_probs.keys()), weights=next_state_probs.values(), k=1)[0]
@@ -283,13 +289,15 @@ class TaxiDomain:
         '''
             RETURNS: Q-value of (state, action) under the value function values
         '''
+        if state == self.goal_state: # for any action on the goal state Q(s,a) is taken to be 0
+            return 0
         reward = self.R(state, action)
         T_probs = self.T(state, action)
         q_value = 0
         for next_state, prob in T_probs.items():
             q_value += prob * (reward + discount * values[next_state])
-        # if q_value > 40:
-            # print(state, action, reward, T_probs)
+        if q_value > 40:
+            print(state, action, reward, T_probs, q_value)
         return q_value
 
     def policy_unchanged(self, pi_dash, pi):
@@ -343,11 +351,12 @@ class TaxiDomain:
         for state in self.all_states:
             i = self.state_to_index[state]
             a[i, i] = 1
-            T_probs = self.T(state, policy[state])
-            for next_state in T_probs:
-                next_state_i = self.state_to_index[next_state]
-                a[i, next_state_i] = -1 * T_probs[next_state] * discount
-            b[i] = self.R(state, policy[state])
+            if state != self.goal_state:
+                T_probs = self.T(state, policy[state])
+                for next_state in T_probs:
+                    next_state_i = self.state_to_index[next_state]
+                    a[i, next_state_i] = -1 * T_probs[next_state] * discount
+                b[i] = self.R(state, policy[state])
         print("\tSolving linear equations to evaluate new policy...")
         x = np.linalg.solve(a, b)
         values = {}
