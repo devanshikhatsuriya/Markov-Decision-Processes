@@ -31,7 +31,24 @@ class Grid:
             self.depots = {"R": (4,0), "B": (0,3), "G": (4,4), "Y": (0,0)}
             # cell locations are represented as (row_no, col_no) = (y_coord., x_coord.)
         elif type == 2:
-            self.size = (10, 10)        
+            self.size = (10, 10)
+            self.array = [[".", "|", ".", ":", ".", ":", ".", "|", "B", ":", ".", ":", ".", ":", ".", "|", ".", ":", "P"],
+                            ["Y", "|", ".", ":", ".", ":", ".", "|", ".", ":", ".", ":", ".", ":", ".", "|", ".", ":", "."],
+                            [".", "|", ".", ":", ".", ":", ".", "|", ".", ":", ".", ":", ".", ":", ".", "|", ".", ":", "."],
+                            [".", "|", ".", ":", ".", ":", ".", "|", ".", ":", ".", ":", ".", ":", ".", "|", ".", ":", "."],
+                            [".", ":", ".", ":", ".", ":", ".", ":", ".", ":", ".", "|", ".", ":", ".", ":", ".", ":", "."],
+                            [".", ":", ".", ":", ".", ":", ".", ":", ".", ":", ".", "|", "M", ":", ".", ":", ".", ":", "."],
+                            [".", ":", ".", ":", ".", "|", "W", ":", ".", ":", ".", "|", ".", ":", ".", "|", ".", ":", "."],
+                            [".", ":", ".", ":", ".", "|", ".", ":", ".", ":", ".", "|", ".", ":", ".", "|", ".", ":", "."],
+                            [".", ":", ".", ":", ".", "|", ".", ":", ".", ":", ".", ":", ".", ":", ".", "|", ".", ":", "."],
+                            ["R", ":", ".", ":", ".", "|", ".", ":", ".", ":", "G", ":", ".", ":", ".", "|", "C", ":", "."]]
+            self.right_walls = [[False for i in range(10)] for i in range(10)] # True for grid cells that have walls on their right side
+            for cell in [(0,0), (1,0), (0,2), (1,2), (3,1), (4,1)]:
+                self.right_walls[cell[0]][cell[1]] = True
+            self.left_walls = [[False for i in range(10)] for i in range(10)] # True for grid cells that have walls on their left side
+            for cell in [(0,1), (1,1), (0,3), (1,3), (3,2), (4,2)]:
+                self.left_walls[cell[0]][cell[1]] = True
+            self.depots = {"R": (4,0), "B": (0,3), "G": (4,4), "Y": (0,0)}     
 
 class TaxiDomain:
 
@@ -123,7 +140,7 @@ class TaxiDomain:
                     probs[s] += 0.05
                 else:
                     probs[s] = 0.05
-            if taxi_loc[1] > 0 and not grid.left_walls[taxi_loc[0]][taxi_loc[1]]: # if not at the left most location in grid and no wall on left side
+            if taxi_loc[1] > 0 and not self.grid.left_walls[taxi_loc[0]][taxi_loc[1]]: # if not at the left most location in grid and no wall on left side
                 if passenger_in_taxi:
                     passenger_next_loc = (taxi_loc[0], taxi_loc[1]-1)
                 else:
@@ -173,7 +190,7 @@ class TaxiDomain:
                     else:
                         probs[s] = 0.85
             else:
-                if taxi_loc[1] > 0 and not grid.left_walls[taxi_loc[0]][taxi_loc[1]]: # if not at the left most location in grid and no wall on left side 
+                if taxi_loc[1] > 0 and not self.grid.left_walls[taxi_loc[0]][taxi_loc[1]]: # if not at the left most location in grid and no wall on left side 
                     if passenger_in_taxi:
                         passenger_next_loc = (taxi_loc[0], taxi_loc[1]-1)
                     else:
@@ -422,7 +439,7 @@ def partA_3b():
 
     grid = Grid(1)
     tdp = TaxiDomain(grid)
-    discount_values = [0.01, 0.1, 0.5, 0.8]
+    discount_values = [0.01, 0.1, 0.5, 0.8] # 0.99
     policy_losses_list = []
     for discount in discount_values:
         print(f"\tRunning for discount={discount}")
