@@ -34,6 +34,7 @@ class Grid:
 class TaxiDomain:
 
     nav_actions = ["N", "E", "S", "W"]
+    actions = {"N", "E", "S", "W", "PICKUP", "PUTDOWN"}
 
     def __init__(self, grid):
         self.grid = grid
@@ -49,6 +50,17 @@ class TaxiDomain:
         
         passenger_in_taxi = False
         self.state = (taxi_loc, passenger_loc, passenger_in_taxi)
+        self.goal_state = (self.dest_loc, self.dest_loc, True)
+
+        self.all_states = set()
+        for taxi_loc_row in range(grid.size[0]):
+            for taxi_loc_col in range(grid.size[1]):
+                for passenger_loc_row in range(grid.size[0]):
+                    for passenger_loc_col in range(grid.size[1]):
+                        all_states.add(((taxi_loc_row, taxi_loc_col), (passenger_loc_row, passenger_loc_col), False))
+        for loc_row in range(grid.size[0]):
+            for loc_col in range(grid.size[1]):
+                all_states.add(((loc_row, loc_col), (loc_row, loc_col), True))
 
         # stats that are maintained
         self.last_action = ""
@@ -224,8 +236,18 @@ class TaxiDomain:
 
         return u
 
+    def converged(pi_dash, pi):
+        '''
+            returns True if the policies pi_dash and pi are identical, else False
+        '''
+        states = {}
 
-    #      
+    def policy_iteration(self):
+        while not converged(pi_dash, pi):
+
+
+
+    
 
 if __name__ == "__main__":
     grid = Grid(1)
@@ -238,5 +260,3 @@ if __name__ == "__main__":
     tdp.state, reward = tdp.take_action(tdp.state, "E")
     tdp.print_state()
 
-    # partA_1b()
-    # partA_1c()
