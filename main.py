@@ -265,25 +265,26 @@ class TaxiDomain:
         print(message)
         
     def value_iteration(self, discount, epsilon):
-        delta=0
         #states list? Transition T?
-        u_dash = np.zeros((5,5))
-        while delta > epsilon*(1-discount)/discount:
+        u_dash = {state: 0 for state in self.all_states}
+        u = {state: 0 for state in self.all_states}
+        num_iter=0
+        while True:
+            num_iter+=1
             delta=0
-            u=np.copy(u_dash)
-            for state in self.states:
+            u=u_dash
+            for state in self.all_states:
                 q_values=[]
-                for a in self.actions:
-                    q=0
-                    for (probaility, state_next) in T(state_next, a):
-                        q+=probability*(self.last_reward + discount*u[state_next])
-                    q_values.append(q)
+                for a in TaxiDomain.actions:
+                    action_q_value = self.q_value(state, a, u, discount)
+                    q_values.append(action_q_value)
                 optimal_action= np.argmax(q_values)
                 u_dash[state] = q_values[optimal_action]
                 if abs(u_dash[state]-u[state])>delta:
                     delta = abs(u_dash[state]-u[state])
-
-        return u
+                    print("Delta is "+str(delta)+" in "+str(num_iter)+"th iteration")
+            if delta <= epsilon*(1-discount)/discount:
+                return (u, num_iter)
 
     def q_value(self, state, action, values, discount):
         '''
@@ -408,6 +409,14 @@ class TaxiDomain:
         print(f"\tPolicy Iteration converged in {iteration_num} iterations")
         return (pi_dash, value_functions)
 
+def partA_2a():
+    grid = Grid(1)
+    tdp = TaxiDomain(grid)
+    epsilon = 0.25
+    answer = tdp.value_iteration(0.9, epsilon)
+    #print (answer[0])
+    print ("Epsilon chosen: "+str(epsilon)+", total number of iterations: "+str(answer[1]))
+
 def partA_3b():
     print("\nRunning Policy Iteration for different discount factors...")
 
@@ -455,5 +464,5 @@ if __name__ == "__main__":
     tdp.print_state()
     tdp.state, reward = tdp.take_action(tdp.state, "E")
     tdp.print_state()
-    partA_3b()
-
+    partA_2a()
+    #partA_3b()
