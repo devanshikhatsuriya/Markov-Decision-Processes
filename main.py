@@ -1,5 +1,7 @@
 import random
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 class Grid:
 
@@ -53,14 +55,23 @@ class TaxiDomain:
         self.goal_state = (self.dest_loc, self.dest_loc, True)
 
         self.all_states = set()
+        self.state_to_index = {}
+        index = -1
         for taxi_loc_row in range(grid.size[0]):
             for taxi_loc_col in range(grid.size[1]):
                 for passenger_loc_row in range(grid.size[0]):
                     for passenger_loc_col in range(grid.size[1]):
-                        all_states.add(((taxi_loc_row, taxi_loc_col), (passenger_loc_row, passenger_loc_col), False))
+                        state = ((taxi_loc_row, taxi_loc_col), (passenger_loc_row, passenger_loc_col), False)
+                        self.all_states.add(state)
+                        index += 1
+                        self.state_to_index[state] = index
         for loc_row in range(grid.size[0]):
             for loc_col in range(grid.size[1]):
-                all_states.add(((loc_row, loc_col), (loc_row, loc_col), True))
+                state = ((loc_row, loc_col), (loc_row, loc_col), True)
+                self.all_states.add(state)
+                index += 1
+                self.state_to_index[state] = index
+        self.num_states = len(self.all_states)
 
         # stats that are maintained
         self.last_action = ""
@@ -78,28 +89,44 @@ class TaxiDomain:
         if a in TaxiDomain.nav_actions:
             # initialize probablility of 0.05 in all directions
             if taxi_loc[0] < 4: # if not at the top most location in grid
-                probs[((taxi_loc[0]+1, taxi_loc[1]), passenger_loc, passenger_in_taxi)] = 0.05
+                if passenger_in_taxi:
+                    passenger_next_loc = (taxi_loc[0]+1, taxi_loc[1])
+                else:
+                    passenger_next_loc = passenger_loc
+                probs[((taxi_loc[0]+1, taxi_loc[1]), passenger_next_loc, passenger_in_taxi)] = 0.05
             else:
                 if s in probs:
                     probs[s] += 0.05
                 else:
                     probs[s] = 0.05
             if taxi_loc[1] < 4 and not self.grid.right_walls[taxi_loc[0]][taxi_loc[1]]: # if not at the right most location in grid and no wall on right side 
-                probs[((taxi_loc[0], taxi_loc[1]+1), passenger_loc, passenger_in_taxi)] = 0.05
+                if passenger_in_taxi:
+                    passenger_next_loc = (taxi_loc[0], taxi_loc[1]+1)
+                else:
+                    passenger_next_loc = passenger_loc
+                probs[((taxi_loc[0], taxi_loc[1]+1), passenger_next_loc, passenger_in_taxi)] = 0.05
             else:
                 if s in probs:
                     probs[s] += 0.05
                 else:
                     probs[s] = 0.05
             if taxi_loc[0] > 0: # if not at the bottom most location in grid
-                probs[((taxi_loc[0]-1, taxi_loc[1]), passenger_loc, passenger_in_taxi)] = 0.05
+                if passenger_in_taxi:
+                    passenger_next_loc = (taxi_loc[0]-1, taxi_loc[1])
+                else:
+                    passenger_next_loc = passenger_loc
+                probs[((taxi_loc[0]-1, taxi_loc[1]), passenger_next_loc, passenger_in_taxi)] = 0.05
             else:
                 if s in probs:
                     probs[s] += 0.05
                 else:
                     probs[s] = 0.05
-            if taxi_loc[1] > 0 and not grid.left_walls[taxi_loc[0]][taxi_loc[1]]: # if not at the left most location in grid and no wall on left side 
-                probs[((taxi_loc[0], taxi_loc[1]-1), passenger_loc, passenger_in_taxi)] = 0.05
+            if taxi_loc[1] > 0 and not grid.left_walls[taxi_loc[0]][taxi_loc[1]]: # if not at the left most location in grid and no wall on left side
+                if passenger_in_taxi:
+                    passenger_next_loc = (taxi_loc[0], taxi_loc[1]-1)
+                else:
+                    passenger_next_loc = passenger_loc
+                probs[((taxi_loc[0], taxi_loc[1]-1), passenger_next_loc, passenger_in_taxi)] = 0.05
             else:
                 if s in probs:
                     probs[s] += 0.05
@@ -109,15 +136,23 @@ class TaxiDomain:
             # probability 0.85 in direction of a
             if a == "N":
                 if taxi_loc[0] < 4: # if not at the top most location in grid
-                    probs[((taxi_loc[0]+1, taxi_loc[1]), passenger_loc, passenger_in_taxi)] = 0.85
+                    if passenger_in_taxi:
+                        passenger_next_loc = (taxi_loc[0]+1, taxi_loc[1])
+                    else:
+                        passenger_next_loc = passenger_loc
+                    probs[((taxi_loc[0]+1, taxi_loc[1]), passenger_next_loc, passenger_in_taxi)] = 0.85
                 else:
                     if s in probs:
                         probs[s] += 0.85
                     else:
                         probs[s] = 0.85
             elif a == "E":
-                if taxi_loc[1] < 4 and not self.grid.right_walls[taxi_loc[0]][taxi_loc[1]]: # if not at the right most location in grid and no wall on right side 
-                    probs[((taxi_loc[0], taxi_loc[1]+1), passenger_loc, passenger_in_taxi)] = 0.85
+                if taxi_loc[1] < 4 and not self.grid.right_walls[taxi_loc[0]][taxi_loc[1]]: # if not at the right most location in grid and no wall on right side
+                    if passenger_in_taxi:
+                        passenger_next_loc = (taxi_loc[0], taxi_loc[1]+1)
+                    else:
+                        passenger_next_loc = passenger_loc
+                    probs[((taxi_loc[0], taxi_loc[1]+1), passenger_next_loc, passenger_in_taxi)] = 0.85
                 else:
                     if s in probs:
                         probs[s] += 0.85
@@ -125,7 +160,11 @@ class TaxiDomain:
                         probs[s] = 0.85
             elif a == "S":
                 if taxi_loc[0] > 0: # if not at the bottom most location in grid
-                    probs[((taxi_loc[0]-1, taxi_loc[1]), passenger_loc, passenger_in_taxi)] = 0.85
+                    if passenger_in_taxi:
+                        passenger_next_loc = (taxi_loc[0]-1, taxi_loc[1])
+                    else:
+                        passenger_next_loc = passenger_loc
+                    probs[((taxi_loc[0]-1, taxi_loc[1]), passenger_next_loc, passenger_in_taxi)] = 0.85
                 else:
                     if s in probs:
                         probs[s] += 0.85
@@ -133,7 +172,11 @@ class TaxiDomain:
                         probs[s] = 0.85
             else:
                 if taxi_loc[1] > 0 and not grid.left_walls[taxi_loc[0]][taxi_loc[1]]: # if not at the left most location in grid and no wall on left side 
-                    probs[((taxi_loc[0], taxi_loc[1]-1), passenger_loc, passenger_in_taxi)] = 0.85
+                    if passenger_in_taxi:
+                        passenger_next_loc = (taxi_loc[0], taxi_loc[1]-1)
+                    else:
+                        passenger_next_loc = passenger_loc
+                    probs[((taxi_loc[0], taxi_loc[1]-1), passenger_next_loc, passenger_in_taxi)] = 0.85
                 else:
                     if s in probs:
                         probs[s] += 0.85
@@ -236,18 +279,162 @@ class TaxiDomain:
 
         return u
 
-    def converged(pi_dash, pi):
+    def q_value(self, state, action, values, discount):
         '''
-            returns True if the policies pi_dash and pi are identical, else False
+            RETURNS: Q-value of (state, action) under the value function values
         '''
-        states = {}
+        reward = self.R(state, action)
+        T_probs = self.T(state, action)
+        q_value = 0
+        for next_state, prob in T_probs.items():
+            q_value += prob * (reward + discount * values[next_state])
+        # if q_value > 40:
+            # print(state, action, reward, T_probs)
+        return q_value
 
-    def policy_iteration(self):
-        while not converged(pi_dash, pi):
+    def policy_unchanged(self, pi_dash, pi):
+        '''
+            RETURNS: True if the policies pi_dash and pi are identical, else False
+        '''
+        for state in self.all_states:
+            if pi_dash[state] != pi[state]:
+                return False
+        return True
+
+    def value_loss(self, v_dash, v):
+        '''
+            RETURNS: max-norm distance between v_dash and v
+        '''
+        max_norm_dist = 0
+        for state in self.all_states:
+            max_norm_dist = max(max_norm_dist, abs(v_dash[state]-v[state]))
+        return max_norm_dist    
+
+    def value_converged(self, v_dash, v, error):
+        '''
+            RETURNS: True if max-norm distance between v_dash and v is less than error, else False
+        '''
+        if self.value_loss(v_dash, v) >= error:
+            return False
+        return True
+
+    def policy_evaluation_iterative(self, policy, error, discount):
+        '''
+            iteratively finds value function for the given policy
+            RETURNS: value function as {state: value} dictionary
+        '''
+        v = {state: -1 for state in self.all_states}
+        v_dash = {state: 0 for state in self.all_states}
+        while not self.value_converged(v_dash, v, error):
+            v = v_dash
+            v_dash = {}
+            for state in self.all_states:
+                v_dash[state] = self.q_value(state, policy[state], v, discount)
+        return v_dash
+
+    def policy_evaluation_LA(self, policy, discount):
+        '''
+            finds value function for the given policy by solving linear algebra equations relating values
+            RETURNS: value function as {state: value} dictionary
+        '''
+        a = np.zeros((self.num_states, self.num_states))
+        b = np.zeros(self.num_states)
+        row_num = -1
+        for state in self.all_states:
+            i = self.state_to_index[state]
+            a[i, i] = 1
+            T_probs = self.T(state, policy[state])
+            for next_state in T_probs:
+                next_state_i = self.state_to_index[next_state]
+                a[i, next_state_i] = -1 * T_probs[next_state] * discount
+            b[i] = self.R(state, policy[state])
+        print("\tSolving linear equations to evaluate new policy...")
+        x = np.linalg.solve(a, b)
+        values = {}
+        for state in self.all_states:
+            i = self.state_to_index[state]
+            values[state] = x[i] 
+        return values
+
+    def policy_improvement(self, policy, values, discount):
+        '''
+            does a one-step lookahead from values of given policy to obtain improved policy
+            RETURNS: improved policy as {state: action} dictionary
+        '''
+        pi_dash = {state: "N" for state in self.all_states}
+        for state in self.all_states:
+            best_action = None
+            best_q_value = None
+            for action in TaxiDomain.actions:
+                action_q_value = self.q_value(state, action, values, discount)
+                if best_q_value == None or action_q_value > best_q_value:
+                    best_q_value = action_q_value
+                    best_action = action
+            pi_dash[state] = best_action
+        return pi_dash
+
+    def policy_iteration(self, discount):
+        '''
+            finds optimal policy by policy iteration
+            RETURNS: a tuple (optimal policy, value functions)
+                optimal policy is a {state: action} dictionary
+                value functions is a list of {state: value} dictionary as policy iteration progresses
+        '''
+        pi = {state: "None" for state in self.all_states}
+        pi_dash = {state: "N" for state in self.all_states}
+        error = 0.01
+        value_functions = []
+        iteration_num = 0
+
+        while not self.policy_unchanged(pi_dash, pi):
+            iteration_num += 1
+            pi = pi_dash
+            v = self.policy_evaluation_iterative(pi, error, discount)
+            # v = self.policy_evaluation_LA(pi, discount)
+            value_functions.append(v)
+            pi_dash = self.policy_improvement(pi, v, discount)
+        v = self.policy_evaluation_iterative(pi_dash, error, discount)
+        # v = self.policy_evaluation_LA(pi_dash, discount)
+        value_functions.append(v)
+        print(f"\tPolicy Iteration converged in {iteration_num} iterations")
+        return (pi_dash, value_functions)
+
+def partA_3b():
+    print("\nRunning Policy Iteration for different discount factors...")
+
+    grid = Grid(1)
+    tdp = TaxiDomain(grid)
+    discount_values = [0.01, 0.1, 0.5, 0.8]
+    policy_losses_list = []
+    for discount in discount_values:
+        print(f"\tRunning for discount={discount}")
+        opt_policy, value_functions = tdp.policy_iteration(discount)
+        opt_vf = value_functions[-1]
+        policy_losses = []
+        for vf in value_functions[:-1]:
+            policy_loss = tdp.value_loss(vf, opt_vf)
+            policy_losses.append(policy_loss)
+        policy_losses_list.append(policy_losses)
+    # print(policy_losses_list)
+
+    fig = plt.gcf()
+    fig.set_size_inches(8, 6)
+    for i in range(len(discount_values)):
+        discount = discount_values[i]
+        policy_losses = policy_losses_list[i]
+        plt.plot(list(range(len(policy_losses))), policy_losses, label=f"Discount: {discount}")
+    plt.xlabel("Iteration No.")
+    plt.ylabel("Policy Loss from Optimal Policy")
+    plt.title("Policy Loss vs. Iteration No. as discount factor varies")
+    plt.legend()
+    plt.show()
+
+    fig_name = "PartA_3b.png"
+    fig.savefig(fig_name, dpi=100)
+
+    print(f"Plot '{fig_name}' generated...")
 
 
-
-    
 
 if __name__ == "__main__":
     grid = Grid(1)
@@ -259,4 +446,5 @@ if __name__ == "__main__":
     tdp.print_state()
     tdp.state, reward = tdp.take_action(tdp.state, "E")
     tdp.print_state()
+    partA_3b()
 
