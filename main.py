@@ -282,26 +282,32 @@ class TaxiDomain:
         print(message)
         
     def value_iteration(self, discount, epsilon):
-        #states list? Transition T?
         u_dash = {state: 0 for state in self.all_states}
-        u = {state: 0 for state in self.all_states}
+        #u = {state: 0 for state in self.all_states}
         num_iter=0
+        maxnorm=[]
         while True:
             num_iter+=1
             delta=0
-            u=u_dash
+            u=dict(u_dash)
+
             for state in self.all_states:
                 q_values=[]
                 for a in TaxiDomain.actions:
                     action_q_value = self.q_value(state, a, u, discount)
                     q_values.append(action_q_value)
                 optimal_action= np.argmax(q_values)
+                #print(u_dash[state], u[state])
                 u_dash[state] = q_values[optimal_action]
+                #print(u_dash[state], u[state])
+
                 if abs(u_dash[state]-u[state])>delta:
+                    #print(abs(u_dash[state]-u[state]))
                     delta = abs(u_dash[state]-u[state])
-                    print("Delta is "+str(delta)+" in "+str(num_iter)+"th iteration")
+                    #print("Delta is "+str(delta)+" in "+str(num_iter)+"th iteration")
+            maxnorm.append(delta)
             if delta <= epsilon*(1-discount)/discount:
-                return (u, num_iter)
+                return (u, num_iter, maxnorm)
 
     def q_value(self, state, action, values, discount):
         '''
@@ -429,11 +435,39 @@ class TaxiDomain:
 def partA_2a():
     grid = Grid(1)
     tdp = TaxiDomain(grid)
-    epsilon = 0.25
+    epsilon = 0.5
     answer = tdp.value_iteration(0.9, epsilon)
     #print (answer[0])
     print ("Epsilon chosen: "+str(epsilon)+", total number of iterations: "+str(answer[1]))
 
+def partA_2b():
+    grid = Grid(1)
+    tdp = TaxiDomain(grid)
+    discount_values= [0.01, 0.1, 0.5, 0.8, 0.99]
+    max_norm_list=[]
+    x=[]
+    for discount in discount_values:
+        answer = tdp.value_iteration(discount, 0.01)
+        max_norm_list.append(answer[2])
+        x_local=[]
+        for i in range(1, answer[1]+1):
+            x_local.append(i)
+        x.append(x_local)
+    fig = plt.gcf()
+    fig.set_size_inches(8, 6)
+    for i in range (len (discount_values)):
+        plt.plot(x[i], max_norm_list[i], label="Discount:"+str(discount_values[i]))
+    plt.xlabel("Iteration No.")
+    plt.ylabel("Max Norm Distance")
+    plt.title("Max Norm distance vs. Iteration No. as discount factor varies")
+    plt.legend()
+    plt.show()
+
+    fig_name = "PartA_2b.png"
+    fig.savefig(fig_name, dpi=100)
+
+    print(f"Plot '{fig_name}' generated...")
+    
 def partA_3b():
     print("\nRunning Policy Iteration for different discount factors...")
 
@@ -482,4 +516,6 @@ if __name__ == "__main__":
     tdp.state, reward = tdp.take_action(tdp.state, "E")
     tdp.print_state()
     partA_2a()
-    #partA_3b()
+    #partA_2b()
+    partA_3b()
+
