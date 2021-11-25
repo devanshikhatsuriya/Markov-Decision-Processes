@@ -55,7 +55,7 @@ class Q_Learning:
                 if best_q_value == None or q_values[(state, action)] > best_q_value:
                     best_q_value = q_values[(state, action)]
                     best_action = action
-            p[state] = action
+            p[state] = best_action
         return p
 
     def compute_discounted_rewards(self, policy, num_episodes):
@@ -77,7 +77,7 @@ class Q_Learning:
             num_step = 0
             while not test_tdp.state == test_tdp.goal_state and num_step < 500:
                 num_step += 1
-                print(f"\nStep No.: {num_step} [Evaluation]")
+                # print(f"\nStep No.: {num_step} [Evaluation]")
                 # test_tdp.print_state()
                 action = policy[test_tdp.state]
                 next_state, reward = test_tdp.take_action(test_tdp.state, action)
@@ -92,7 +92,8 @@ class Q_Learning:
         num_updates = 0
         discounted_rewards = []
         average_discounted_rewards = []
-        for episode in range(num_episodes):
+        episode_nums = []
+        for episode in range(0, num_episodes, 20):
             print(f"Episode no.: {episode}")
             self.initialize_episode()
             num_step = 0
@@ -111,11 +112,13 @@ class Q_Learning:
                 # tdp.print_state()
                 # print(f"Q({tdp.state}, {a}) updated from {old_q_value} to {self.q_values[(tdp.state, a)]}")
                 tdp.state = next_state
+            print(f"\nEvaluating episode no.: {episode}")
             policy = self.extract_policy(self.q_values)
             dr = self.compute_discounted_rewards(policy, 20)
             discounted_rewards.append(dr)
             average_discounted_rewards.append(sum(dr)/len(dr))
-        return (discounted_rewards, average_discounted_rewards)
+            episode_nums.append(episode)
+        return (episode_nums, discounted_rewards, average_discounted_rewards)
 
 # class SARSA_Learning:
 
@@ -126,24 +129,24 @@ def partB_2():
     gamma = 0.99
     epsilon = 0.1
     grid = Grid(1)
-    
+
     # Q-Learning with epsilon greedy
     tdp1 = TaxiDomain(grid)
     ql1 = Q_Learning(tdp1, alpha, gamma, epsilon, False)
-    drs1, adrs1 = ql1.learn(2000)
+    ens1, drs1, adrs1 = ql1.learn(2000)
     
     # Q-Learning with decaying epsilon greedy rate
     tdp2 = TaxiDomain(grid)
     ql2 = Q_Learning(tdp2, alpha, gamma, epsilon, True)
-    drs2, adrs2 = ql2.learn(2000)
+    ens2, drs2, adrs2 = ql2.learn(2000)
 
     # SARSA Learning with epsilon greedy
     # SARSA Learning with decaying epsilon greedy rate
 
     fig = plt.gcf()
     fig.set_size_inches(8, 6)
-    plt.plot(list(range(len(adrs1))), adrs1, label=f"Q-Learning")
-    plt.plot(list(range(len(adrs2))), adrs2, label=f"Q-Learning with decaying exploration")
+    plt.plot(ens1, adrs1, label=f"Q-Learning")
+    plt.plot(ens2, adrs2, label=f"Q-Learning with decaying exploration")
     plt.xlabel("Episode No.")
     plt.ylabel("Average discounted reward (over 20 episodes)")
     plt.title("Average discounted reward vs. Training episodes")
