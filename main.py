@@ -282,7 +282,7 @@ class TaxiDomain:
         print(message)
         
     def value_iteration(self, discount, epsilon):
-        u_dash = {state: 0 for state in self.all_states}
+        u_dash = {state: (0, None) for state in self.all_states}
         #u = {state: 0 for state in self.all_states}
         num_iter=0
         maxnorm=[]
@@ -293,23 +293,29 @@ class TaxiDomain:
 
             for state in self.all_states:
                 q_values=[]
+                max=-9999
+                best_a=""
                 for a in TaxiDomain.actions:
-                    action_q_value = self.q_value(state, a, u, discount)
+                    action_q_value = self.q_value(state, a, u, discount, True)
+                    #print(a, best_a, action_q_value, max)
+                    if action_q_value>max:
+                        best_a=a
+                        max=action_q_value
                     q_values.append(action_q_value)
                 optimal_action= np.argmax(q_values)
                 #print(u_dash[state], u[state])
-                u_dash[state] = q_values[optimal_action]
+                u_dash[state] = (q_values[optimal_action], best_a)
                 #print(u_dash[state], u[state])
 
-                if abs(u_dash[state]-u[state])>delta:
+                if abs(u_dash[state][0]-u[state][0])>delta:
                     #print(abs(u_dash[state]-u[state]))
-                    delta = abs(u_dash[state]-u[state])
+                    delta = abs(u_dash[state][0]-u[state][0])
                     #print("Delta is "+str(delta)+" in "+str(num_iter)+"th iteration")
             maxnorm.append(delta)
             if delta <= epsilon*(1-discount)/discount:
                 return (u, num_iter, maxnorm)
 
-    def q_value(self, state, action, values, discount):
+    def q_value(self, state, action, values, discount, bool):
         '''
             RETURNS: Q-value of (state, action) under the value function values
         '''
@@ -319,7 +325,10 @@ class TaxiDomain:
         T_probs = self.T(state, action)
         q_value = 0
         for next_state, prob in T_probs.items():
-            q_value += prob * (reward + discount * values[next_state])
+            if bool==False:
+                q_value += prob * (reward + discount * values[next_state])
+            else:
+                q_value += prob * (reward + discount * values[next_state][0])
         if q_value > 40:
             print(state, action, reward, T_probs, q_value)
         return q_value
@@ -361,7 +370,7 @@ class TaxiDomain:
             v = v_dash
             v_dash = {}
             for state in self.all_states:
-                v_dash[state] = self.q_value(state, policy[state], v, discount)
+                v_dash[state] = self.q_value(state, policy[state], v, discount, False)
         return v_dash
 
     def policy_evaluation_LA(self, policy, discount):
@@ -399,7 +408,7 @@ class TaxiDomain:
             best_action = None
             best_q_value = None
             for action in TaxiDomain.actions:
-                action_q_value = self.q_value(state, action, values, discount)
+                action_q_value = self.q_value(state, action, values, discount, False)
                 if best_q_value == None or action_q_value > best_q_value:
                     best_q_value = action_q_value
                     best_action = action
@@ -468,6 +477,21 @@ def partA_2b():
 
     print(f"Plot '{fig_name}' generated...")
     
+def partA_2c():
+    grid = Grid(1)
+    tdp = TaxiDomain(grid)
+    discount_values= [0.1, 0.99]
+    #action_list = ["S", "W", "N", "E", "PICKUP", "PUTDOWN"]
+    for discount in discount_values:
+        print("discount= "+str(discount)+"\n")
+        answer = tdp.value_iteration(discount, 0.01)
+        tdp.print_state()
+        #print(answer[0])
+        for i in range (20):
+            action= answer[0][tdp.state][1]
+            tdp.state, reward = tdp.take_action(tdp.state, action)
+            tdp.print_state()
+
 def partA_3b():
     print("\nRunning Policy Iteration for different discount factors...")
 
@@ -484,6 +508,7 @@ def partA_3b():
             policy_loss = tdp.value_loss(vf, opt_vf)
             policy_losses.append(policy_loss)
         policy_losses_list.append(policy_losses)
+    print(opt_vf)
     # print(policy_losses_list)
 
     fig = plt.gcf()
@@ -506,16 +531,16 @@ def partA_3b():
 
 
 if __name__ == "__main__":
-    grid = Grid(1)
-    tdp = TaxiDomain(grid)
-    tdp.print_state()
-    tdp.state, reward = tdp.take_action(tdp.state, "N")
-    tdp.print_state()
-    tdp.state, reward = tdp.take_action(tdp.state, "N")
-    tdp.print_state()
-    tdp.state, reward = tdp.take_action(tdp.state, "E")
-    tdp.print_state()
-    partA_2a()
+    #grid = Grid(1)
+    #tdp = TaxiDomain(grid)
+    #tdp.print_state()
+    #tdp.state, reward = tdp.take_action(tdp.state, "N")
+    #tdp.print_state()
+    #tdp.state, reward = tdp.take_action(tdp.state, "N")
+    #tdp.print_state()
+    #tdp.state, reward = tdp.take_action(tdp.state, "E")
+    #tdp.print_state()
+    #partA_2a()
     partA_2b()
-    partA_3b()
-
+    #partA_2c()
+    #partA_3b()
