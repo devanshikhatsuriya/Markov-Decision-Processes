@@ -93,14 +93,14 @@ class Q_Learning:
         discounted_rewards = []
         average_discounted_rewards = []
         episode_nums = []
-        for episode in range(0, num_episodes, 20):
+        for episode in range(num_episodes):
             print(f"Episode no.: {episode}")
             self.initialize_episode()
             num_step = 0
             while not tdp.state == tdp.goal_state and num_step < 500:
                 num_step += 1
                 num_updates += 1
-                print(f"\nStep No.: {num_step}")
+                # print(f"\nStep No.: {num_step}")
                 a = self.choose_action(tdp.state, num_updates)
                 next_state, reward = tdp.take_action(tdp.state, a)
                 max_q_next_state = 0
@@ -112,12 +112,13 @@ class Q_Learning:
                 # tdp.print_state()
                 # print(f"Q({tdp.state}, {a}) updated from {old_q_value} to {self.q_values[(tdp.state, a)]}")
                 tdp.state = next_state
-            print(f"\nEvaluating episode no.: {episode}")
-            policy = self.extract_policy(self.q_values)
-            dr = self.compute_discounted_rewards(policy, 20)
-            discounted_rewards.append(dr)
-            average_discounted_rewards.append(sum(dr)/len(dr))
-            episode_nums.append(episode)
+            if episode%20 == 0:
+                print(f"\nEvaluating episode no.: {episode}")
+                policy = self.extract_policy(self.q_values)
+                dr = self.compute_discounted_rewards(policy, 20)
+                discounted_rewards.append(dr)
+                average_discounted_rewards.append(sum(dr)/len(dr))
+                episode_nums.append(episode)
         return (episode_nums, discounted_rewards, average_discounted_rewards)
 
 # class SARSA_Learning:
