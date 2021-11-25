@@ -43,12 +43,12 @@ class Grid:
                             [".", ":", ".", ":", ".", "|", ".", ":", ".", ":", ".", ":", ".", ":", ".", "|", ".", ":", "."],
                             ["R", ":", ".", ":", ".", "|", ".", ":", ".", ":", "G", ":", ".", ":", ".", "|", "C", ":", "."]]
             self.right_walls = [[False for i in range(10)] for i in range(10)] # True for grid cells that have walls on their right side
-            for cell in [(0,0), (1,0), (0,2), (1,2), (3,1), (4,1)]:
+            for cell in [(0,0), (1,0), (2,0), (3,0), (0,3), (1,3), (2,3), (3,3), (0,7), (1,7), (2,7), (3,7), (4,5), (5,5), (6,5), (7,5), (6,2), (7,2), (8,2), (9,2), (6,7), (7,7), (8,7), (9,7)]:
                 self.right_walls[cell[0]][cell[1]] = True
             self.left_walls = [[False for i in range(10)] for i in range(10)] # True for grid cells that have walls on their left side
-            for cell in [(0,1), (1,1), (0,3), (1,3), (3,2), (4,2)]:
+            for cell in [(0,1), (1,1), (2,1), (3,1), (0,4), (1,4), (2,4), (3,4), (0,8), (1,8), (2,8), (3,8), (4,6), (5,6), (6,6), (7,6), (6,3), (7,3), (8,3), (9,3), (6,8), (7,8), (8,8), (9,8)]:
                 self.left_walls[cell[0]][cell[1]] = True
-            self.depots = {"R": (4,0), "B": (0,3), "G": (4,4), "Y": (0,0)}     
+            self.depots = {"R": (9,0), "B": (0,4), "G": (9,5), "Y": (1,0), "W": (6,3), "M": (5,6), "C": (9,8), "P": (0,9)}     
 
 class TaxiDomain:
 
@@ -59,13 +59,13 @@ class TaxiDomain:
         self.grid = grid
 
         # initialize locations
-        depot_names = ["R", "B", "G", "Y"]
+        depot_names = list(self.grid.depots.keys())
         selected_depots = random.sample(depot_names, 2)
         # print(selected_depots)
         passenger_loc = grid.depots[selected_depots[0]]
         self.dest_depot = selected_depots[1]
         self.dest_loc = grid.depots[selected_depots[1]]
-        taxi_loc = (random.randint(0,4), random.randint(0,4)) # random.randint(0, 4) returns a random integer in [0, 4]
+        taxi_loc = (random.randint(0,grid.size[1]-1), random.randint(0,grid.size[0]-1)) # random.randint(0, 4) returns a random integer in [0, 4]
         
         passenger_in_taxi = False
         self.state = (taxi_loc, passenger_loc, passenger_in_taxi)
@@ -516,6 +516,6 @@ if __name__ == "__main__":
     tdp.state, reward = tdp.take_action(tdp.state, "E")
     tdp.print_state()
     partA_2a()
-    #partA_2b()
+    partA_2b()
     partA_3b()
 
