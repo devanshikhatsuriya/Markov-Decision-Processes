@@ -646,7 +646,7 @@ class Q_Learning:
         average_discounted_rewards = []
         episode_nums = []
         for episode in range(num_episodes):
-            # print(f"Episode no.: {episode}")
+            print(f"Episode no.: {episode}")
             self.initialize_episode()
             num_step = 0
             while tdp.state != tdp.goal_state and num_step < 500:
@@ -665,18 +665,15 @@ class Q_Learning:
                 # tdp.print_state()
                 # print(f"Q({tdp.state}, {a}) updated from {old_q_value} to {self.q_values[(tdp.state, a)]} by (1-{self.learning_rate})*{old_q_value}+{self.learning_rate}*[{reward}+{self.discount}*{max_q_next_state}]")
                 tdp.state = next_state
-            # if episode == 20:
-            #    print(len(self.q_values), self.q_values)
-            #    return
             if compute_rewards and episode!=0 and episode%20 == 0:
-                # print(f"\nEvaluating episode no.: {episode}\n")
+                print(f"\nEvaluating episode no.: {episode}\n")
                 policy = self.extract_policy(self.q_values)
                 dr = self.compute_discounted_rewards(policy, 20)
                 discounted_rewards.append(dr)
                 average_discounted_rewards.append(sum(dr)/len(dr))
                 episode_nums.append(episode)
         # evaluate last time
-        # print(f"\nEvaluating episode no.: {num_episodes-1}\n")
+        print(f"\nEvaluating episode no.: {num_episodes-1}\n")
         policy = self.extract_policy(self.q_values)
         dr = self.compute_discounted_rewards(policy, 20)
         discounted_rewards.append(dr)
@@ -685,7 +682,6 @@ class Q_Learning:
         return (episode_nums, discounted_rewards, average_discounted_rewards)
 
 class SARSA_Learning:
-
     def __init__(self, taxi_domain_problem, learning_rate, discount, exploration_rate, decay_exploration):
         self.tdp = taxi_domain_problem
         self.grid = self.tdp.grid
@@ -787,6 +783,7 @@ class SARSA_Learning:
                 next_state, reward = tdp.take_action(tdp.state, a)
                 a_next = self.choose_action(next_state, num_updates)
                 q_next_state = self.q_values[(next_state, a_next)]
+                
                 sample = reward + self.discount * q_next_state
                 old_q_value = self.q_values[(tdp.state, a)]
                 self.q_values[(tdp.state, a)] = (1-self.learning_rate)*old_q_value + self.learning_rate*sample
@@ -880,15 +877,20 @@ def partB_3():
         test_tdp.last_reward = ""
         # run this episode
         num_step = 0
+        print("Pasenger: ", passenger_loc)
+        print("Taxi: ", taxi_loc)
+        acc_reward=0.0
         while not test_tdp.state == test_tdp.goal_state and num_step < 500:
             num_step += 1
-            print(f"\nStep No.: {num_step}")
-            test_tdp.print_state()
+            #print(f"\nStep No.: {num_step}")
+            #test_tdp.print_state()
             action = policy[test_tdp.state]
             next_state, reward = test_tdp.take_action(test_tdp.state, action)
+            acc_reward+=reward*(gamma**(num_step-1))
             test_tdp.state = next_state
         # print last state
         num_step += 1
+        print("Total Reward: ", acc_reward)
         print(f"\nStep No.: {num_step}")
         test_tdp.print_state()
 
@@ -955,7 +957,7 @@ def partB_4():
     print(f"Plot '{fig_name}' generated...")
 
 def partB_5():
-    # We are the best learning and exploration rates here
+    # SEEE: What are the best learning and exploration rates? Set them here
     alpha = 0.5
     gamma = 0.99
     epsilon = 0.2
@@ -993,7 +995,7 @@ if __name__ == "__main__":
     # tdp.print_state()
     # partA_2a()
     # partA_2b()
-    # partA_2c()
+    #partA_2c()
     # s1 = time.process_time()
     # partA_3b(1)
     # t1 = time.process_time() - s1
@@ -1007,6 +1009,6 @@ if __name__ == "__main__":
     # ql = Q_Learning(tdp, 0.25, 0.99, 0.1, False)
     # ql.learn(2000)
     # partB_2()
-    # partB_3()
+    partB_3()
     # partB_4()
-    partB_5()
+    # partB_5()
