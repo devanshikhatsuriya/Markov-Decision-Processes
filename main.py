@@ -68,6 +68,7 @@ class TaxiDomain:
         taxi_loc = (random.randint(0,grid.size[1]-1), random.randint(0,grid.size[0]-1)) # random.randint(0, 4) returns a random integer in [0, 4]
         
         passenger_in_taxi = False
+        self.initial_state = (taxi_loc, passenger_loc, passenger_in_taxi)
         self.state = (taxi_loc, passenger_loc, passenger_in_taxi)
         self.goal_state = (self.dest_loc, self.dest_loc, False)
 
@@ -479,18 +480,21 @@ def partA_2b():
     
 def partA_2c():
     grid = Grid(1)
-    tdp = TaxiDomain(grid)
     discount_values= [0.1, 0.99]
     #action_list = ["S", "W", "N", "E", "PICKUP", "PUTDOWN"]
     for discount in discount_values:
-        print("discount= "+str(discount)+"\n")
+        tdp = TaxiDomain(grid)
+        print("\n\nRunning for discount="+str(discount)+"\n")
         answer = tdp.value_iteration(discount, 0.01)
         tdp.print_state()
         #print(answer[0])
         for i in range (20):
-            action= answer[0][tdp.state][1]
+            print(f"\nStep {i}")
+            action = answer[0][tdp.state][1]
             tdp.state, reward = tdp.take_action(tdp.state, action)
             tdp.print_state()
+            if tdp.state == tdp.goal_state:
+                break
 
 def partA_3b():
     print("\nRunning Policy Iteration for different discount factors...")
@@ -528,8 +532,6 @@ def partA_3b():
 
     print(f"Plot '{fig_name}' generated...")
 
-
-
 if __name__ == "__main__":
     #grid = Grid(1)
     #tdp = TaxiDomain(grid)
@@ -541,6 +543,6 @@ if __name__ == "__main__":
     #tdp.state, reward = tdp.take_action(tdp.state, "E")
     #tdp.print_state()
     #partA_2a()
-    partA_2b()
-    #partA_2c()
+    #partA_2b()
+    partA_2c()
     #partA_3b()

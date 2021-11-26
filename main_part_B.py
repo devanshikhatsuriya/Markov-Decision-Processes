@@ -24,7 +24,7 @@ class Q_Learning:
         self.valid_passenger_depots.remove(self.tdp.dest_depot)
 
     def initialize_episode(self):
-        passenger_loc = self.grid.depots[random.sample(self.valid_passenger_depots, 1)[0]]
+        passenger_loc = self.grid.depots[random.choice(self.valid_passenger_depots)]
         taxi_loc = (random.randint(0,self.grid.size[1]-1), random.randint(0,self.grid.size[0]-1))
         passenger_in_taxi = False
         self.tdp.state = (taxi_loc, passenger_loc, passenger_in_taxi) 
@@ -35,7 +35,7 @@ class Q_Learning:
         if self.decay_exploration:
             exp_rate /= num_updates
         if sample <= exp_rate: # choose random action (explore)
-            return random.choice(["N", "E", "S", "W", "PICKUP", "PUTDOWN"])            
+            a = random.choice(list(TaxiDomain.actions))            
         else: # choose action with best q-value (greedy)
             best_action = None
             best_value = None
@@ -44,7 +44,9 @@ class Q_Learning:
                 if best_value == None or best_value < qv:
                     best_value = qv
                     best_action = action
-            return best_action
+            a = best_action
+        # print(a)
+        return a
 
     def extract_policy(self, q_values):
         p = {}
@@ -69,8 +71,8 @@ class Q_Learning:
         for trial in range(num_episodes):
             dr = 0
             multiplier = 1
-            # initialize passenger and taxi locations
-            passenger_loc = self.grid.depots[random.sample(self.valid_passenger_depots, 1)[0]]
+            # initialize passenger and taxi locations for test_tdp
+            passenger_loc = self.grid.depots[random.choice(self.valid_passenger_depots)]
             taxi_loc = (random.randint(0,self.grid.size[1]-1), random.randint(0,self.grid.size[0]-1))
             test_tdp.state = (taxi_loc, passenger_loc, False)
             # run this episode
@@ -87,7 +89,7 @@ class Q_Learning:
             drs.append(dr)
         return drs                
 
-    def learn(self, num_episodes):
+    def learn(self, num_episodes, compute_rewards):
         tdp = self.tdp
         num_updates = 0
         discounted_rewards = []
@@ -97,35 +99,42 @@ class Q_Learning:
             print(f"Episode no.: {episode}")
             self.initialize_episode()
             num_step = 0
-            while not tdp.state == tdp.goal_state and num_step < 500:
+            while tdp.state != tdp.goal_state and num_step < 500:
                 num_step += 1
                 num_updates += 1
                 # print(f"\nStep No.: {num_step}")
                 a = self.choose_action(tdp.state, num_updates)
                 next_state, reward = tdp.take_action(tdp.state, a)
-                max_q_next_state = 0
+                max_q_next_state = None
                 for action in TaxiDomain.actions:
-                    max_q_next_state = max(max_q_next_state, self.q_values[(tdp.state, action)])
+                    if max_q_next_state == None or max_q_next_state < self.q_values[(tdp.state, action)]:
+                        max_q_next_state = self.q_values[(tdp.state, action)]
                 sample = reward + self.discount * max_q_next_state
                 old_q_value = self.q_values[(tdp.state, a)]
-                self.q_values[(tdp.state, a)] = (1-self.learning_rate)*self.q_values[(tdp.state, a)] + self.learning_rate*sample
+                self.q_values[(tdp.state, a)] = (1-self.learning_rate)*old_q_value + self.learning_rate*sample
                 # tdp.print_state()
-                # print(f"Q({tdp.state}, {a}) updated from {old_q_value} to {self.q_values[(tdp.state, a)]}")
+                # print(f"Q({tdp.state}, {a}) updated from {old_q_value} to {self.q_values[(tdp.state, a)]} by (1-{self.learning_rate})*{old_q_value}+{self.learning_rate}*[{reward}+{self.discount}*{max_q_next_state}]")
                 tdp.state = next_state
-            if episode%20 == 0:
-                print(f"\nEvaluating episode no.: {episode}")
+            if compute_rewards and episode!=0 and episode%20 == 0:
+                print(f"\nEvaluating episode no.: {episode}\n")
                 policy = self.extract_policy(self.q_values)
                 dr = self.compute_discounted_rewards(policy, 20)
                 discounted_rewards.append(dr)
                 average_discounted_rewards.append(sum(dr)/len(dr))
                 episode_nums.append(episode)
+        # evaluate last time
+        print(f"\nEvaluating episode no.: {num_episodes-1}\n")
+        policy = self.extract_policy(self.q_values)
+        dr = self.compute_discounted_rewards(policy, 20)
+        discounted_rewards.append(dr)
+        average_discounted_rewards.append(sum(dr)/len(dr))
+        episode_nums.append(num_episodes-1)
         return (episode_nums, discounted_rewards, average_discounted_rewards)
 
 # class SARSA_Learning:
 
 
 def partB_2():
-    average_discounted_rewards_list = []
     alpha = 0.25
     gamma = 0.99
     epsilon = 0.1
@@ -134,12 +143,12 @@ def partB_2():
     # Q-Learning with epsilon greedy
     tdp1 = TaxiDomain(grid)
     ql1 = Q_Learning(tdp1, alpha, gamma, epsilon, False)
-    ens1, drs1, adrs1 = ql1.learn(2000)
+    ens1, drs1, adrs1 = ql1.learn(2000, True)
     
     # Q-Learning with decaying epsilon greedy rate
     tdp2 = TaxiDomain(grid)
     ql2 = Q_Learning(tdp2, alpha, gamma, epsilon, True)
-    ens2, drs2, adrs2 = ql2.learn(2000)
+    ens2, drs2, adrs2 = ql2.learn(2000, True)
 
     # SARSA Learning with epsilon greedy
     # SARSA Learning with decaying epsilon greedy rate
@@ -159,9 +168,133 @@ def partB_2():
 
     print(f"Plot '{fig_name}' generated...")
 
+def partB_3():
+    alpha = 0.25
+    gamma = 0.99
+    epsilon = 0.1
+    grid = Grid(1)
+    # training using Q-Learning with decaying epsilon greedy rate
+    tdp = TaxiDomain(grid)
+    ql = Q_Learning(tdp, alpha, gamma, epsilon, True)
+    ens, drs, adrs = ql.learn(2000, False)
+    # extract policy
+    policy = ql.extract_policy(ql.q_values)
+    # test policy on 5 episodes
+    test_tdp = TaxiDomain(grid)
+    test_tdp.dest_depot = tdp.dest_depot
+    test_tdp.dest_loc = tdp.dest_loc
+    test_tdp.goal_state = tdp.goal_state
+
+    for trial in range(5):
+        print("\n\nEpisode No. = "+str(trial)+"\n")
+        # initialize passenger and taxi locations
+        passenger_loc = test_tdp.grid.depots[random.sample(ql.valid_passenger_depots, 1)[0]]
+        taxi_loc = (random.randint(0,test_tdp.grid.size[1]-1), random.randint(0,test_tdp.grid.size[0]-1))
+        test_tdp.state = (taxi_loc, passenger_loc, False)
+        # run this episode
+        num_step = 0
+        while not test_tdp.state == test_tdp.goal_state and num_step < 500:
+            num_step += 1
+            print(f"\nStep No.: {num_step}")
+            test_tdp.print_state()
+            action = policy[test_tdp.state]
+            next_state, reward = test_tdp.take_action(test_tdp.state, action)
+            test_tdp.state = next_state
+
+def partB_4():
+    grid = Grid(1)
+    gamma = 0.99
+    alpha = 0.1
+
+    # vary exploration rate
+    print("\nRunning Q-Learning for different exploration rates...")
+    ens_list, adrs_list = [], []
+    exp_rates = [0, 0.05, 0.1, 0.5, 0.9]
+    for exp in exp_rates:
+        print(f"\n\nRunning for exploration rate={exp}\n")
+        tdp = TaxiDomain(grid)
+        ql = Q_Learning(tdp, alpha, gamma, exp, False)
+        ens, drs, adrs = ql.learn(2000, True)
+        ens_list.append(ens)
+        adrs_list.append(adrs)
+
+    fig = plt.gcf()
+    fig.set_size_inches(8, 6)
+    for i in range(len(exp_rates)):
+        exp = exp_rates[i]
+        plt.plot(ens_list[i], adrs_list[i], label=f"Exploration rate: {exp}")
+    plt.xlabel("Episode No.")
+    plt.ylabel("Average discounted reward (over 20 episodes)")
+    plt.title("Average discounted reward vs. Training episodes as exploration rate varies")
+    plt.legend()
+    plt.show()
+
+    fig_name = "PartB_4_exploration.png"
+    fig.savefig(fig_name, dpi=100)
+
+    print(f"Plot '{fig_name}' generated...")
+
+    # vary learning rate
+    epsilon = 0.1
+    ens_list, adrs_list = [], []
+    learning_rates = [0.1, 0.2, 0.3, 0.4, 0.5]
+    print("\nRunning Q-Learning for different learning rates...")
+    for lr in learning_rates:
+        print(f"\n\nRunning for learning rate={lr}\n")
+        tdp = TaxiDomain(grid)
+        ql = Q_Learning(tdp, lr, gamma, epsilon, False)
+        ens, drs, adrs = ql.learn(2000, True)
+        ens_list.append(ens)
+        adrs_list.append(adrs)
+
+    fig = plt.gcf()
+    fig.set_size_inches(8, 6)
+    for i in range(len(learning_rates)):
+        lr = learning_rates[i]
+        plt.plot(ens_list[i], adrs_list[i], label=f"Learning rate: {lr}")
+    plt.xlabel("Episode No.")
+    plt.ylabel("Average discounted reward (over 20 episodes)")
+    plt.title("Average discounted reward vs. Training episodes as learning rate varies")
+    plt.legend()
+    plt.show()
+
+    fig_name = "PartB_4_learning.png"
+    fig.savefig(fig_name, dpi=100)
+
+    print(f"Plot '{fig_name}' generated...")
+
+def partB_5():
+    # SEEE: What are the best learning and exploration rates? Set them here
+    alpha = 0.25
+    gamma = 0.99
+    epsilon = 0.1
+    grid = Grid(2)
+    
+    # Q-Learning with decaying epsilon greedy rate
+    tdp2 = TaxiDomain(grid)
+    ql2 = Q_Learning(tdp2, alpha, gamma, epsilon, True)
+    ens2, drs2, adrs2 = ql2.learn(10000, True)
+
+    fig = plt.gcf()
+    fig.set_size_inches(8, 6)
+    plt.plot(ens2, adrs2, label=f"Q-Learning with decaying exploration")
+    plt.xlabel("Episode No.")
+    plt.ylabel("Average discounted reward (over 20 episodes)")
+    plt.title("Average discounted reward vs. Training episodes on 10*10 Grid")
+    plt.legend()
+    plt.show()
+
+    fig_name = "PartB_5.png"
+    fig.savefig(fig_name, dpi=100)
+
+    print(f"Plot '{fig_name}' generated...")
+
 if __name__ == "__main__":
     # grid = Grid(1)
     # tdp = TaxiDomain(grid)
     # ql = Q_Learning(tdp, 0.25, 0.99, 0.1, False)
     # ql.learn(2000)
-    partB_2()
+    # partB_2()
+    # partB_3()
+    # partB_4()
+    # partB_5()
