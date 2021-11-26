@@ -665,9 +665,9 @@ class Q_Learning:
                 # tdp.print_state()
                 # print(f"Q({tdp.state}, {a}) updated from {old_q_value} to {self.q_values[(tdp.state, a)]} by (1-{self.learning_rate})*{old_q_value}+{self.learning_rate}*[{reward}+{self.discount}*{max_q_next_state}]")
                 tdp.state = next_state
-            if episode == 20:
-                print(len(self.q_values), self.q_values)
-                return
+            # if episode == 20:
+            #    print(len(self.q_values), self.q_values)
+            #    return
             if compute_rewards and episode!=0 and episode%20 == 0:
                 # print(f"\nEvaluating episode no.: {episode}\n")
                 policy = self.extract_policy(self.q_values)
