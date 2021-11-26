@@ -465,10 +465,9 @@ class TaxiDomain:
 def partA_2a():
     grid = Grid(1)
     tdp = TaxiDomain(grid)
-    epsilon = 0.5
+    epsilon = 0.01
     answer = tdp.value_iteration(0.9, epsilon)
-    #print (answer[0])
-    print ("Epsilon chosen: "+str(epsilon)+", total number of iterations: "+str(answer[1]))
+    print("Epsilon chosen: "+str(epsilon)+", Total number of iterations: "+str(answer[1]))
 
 def partA_2b():
     grid = Grid(1)
@@ -565,14 +564,14 @@ if __name__ == "__main__":
     #tdp.print_state()
     #tdp.state, reward = tdp.take_action(tdp.state, "E")
     #tdp.print_state()
-    #partA_2a()
+    partA_2a()
     #partA_2b()
     #partA_2c()
-    s1 = time.process_time()
-    partA_3b(1)
-    t1 = time.process_time() - s1
-    s2 = time.process_time()
-    partA_3b(2)
-    t2 = time.process_time() - s2
-    print(f"Time taken in Part A 3(b) using iterative policy evaluation = {t1} s")
-    print(f"Time taken in Part A 3(b) using linear algebra policy evaluation = {t2} s")
+    # s1 = time.process_time()
+    # partA_3b(1)
+    # t1 = time.process_time() - s1
+    # s2 = time.process_time()
+    # partA_3b(2)
+    # t2 = time.process_time() - s2
+    # print(f"Time taken in Part A 3(b) using iterative policy evaluation = {t1} s")
+    # print(f"Time taken in Part A 3(b) using linear algebra policy evaluation = {t2} s")
