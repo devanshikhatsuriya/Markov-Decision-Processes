@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 
 class Grid:
@@ -381,7 +382,6 @@ class TaxiDomain:
         '''
         a = np.zeros((self.num_states, self.num_states))
         b = np.zeros(self.num_states)
-        row_num = -1
         for state in self.all_states:
             i = self.state_to_index[state]
             a[i, i] = 1
@@ -389,10 +389,11 @@ class TaxiDomain:
                 T_probs = self.T(state, policy[state])
                 for next_state in T_probs:
                     next_state_i = self.state_to_index[next_state]
-                    a[i, next_state_i] = -1 * T_probs[next_state] * discount
+                    a[i, next_state_i] += -1 * T_probs[next_state] * discount
                 b[i] = self.R(state, policy[state])
-        print("\tSolving linear equations to evaluate new policy...")
+        print("\t\tSolving linear equations to evaluate policy...")
         x = np.linalg.solve(a, b)
+        # print(f"\t\tAssert correct: {np.allclose(np.dot(a, x), b)}")
         values = {}
         for state in self.all_states:
             i = self.state_to_index[state]
@@ -404,7 +405,7 @@ class TaxiDomain:
             does a one-step lookahead from values of given policy to obtain improved policy
             RETURNS: improved policy as {state: action} dictionary
         '''
-        pi_dash = {state: "N" for state in self.all_states}
+        pi_dash = {}
         for state in self.all_states:
             best_action = None
             best_q_value = None
@@ -416,28 +417,47 @@ class TaxiDomain:
             pi_dash[state] = best_action
         return pi_dash
 
-    def policy_iteration(self, discount):
+    def policy_iteration(self, discount, type):
         '''
             finds optimal policy by policy iteration
+            INPUT: type 1 uses iterative policy evaluation, type 2 uses linear algebra to evaluate policy
             RETURNS: a tuple (optimal policy, value functions)
                 optimal policy is a {state: action} dictionary
                 value functions is a list of {state: value} dictionary as policy iteration progresses
         '''
         pi = {state: "None" for state in self.all_states}
-        pi_dash = {state: "N" for state in self.all_states}
-        error = 0.01
+        pi_dash = {state: "PICKUP" for state in self.all_states}
+        error = 1e-4
         value_functions = []
         iteration_num = 0
 
-        while not self.policy_unchanged(pi_dash, pi):
+        while not self.policy_unchanged(pi_dash, pi) and not (iteration_num!=0 and self.value_converged(v_dash, v, error)):
+            # policy iteration converges if policy is unchanged or evaluated value of policy has converged
+            print(f"\t\tIteration: {iteration_num}")
             iteration_num += 1
             pi = pi_dash
-            v = self.policy_evaluation_iterative(pi, error, discount)
-            # v = self.policy_evaluation_LA(pi, discount)
+            print(f"\t\tEvaluating policy...")
+            if iteration_num == 1:
+                if type == 1:
+                    v = self.policy_evaluation_iterative(pi, error, discount)
+                elif type == 2:
+                    v = self.policy_evaluation_LA(pi, discount)
+            else:
+                v = v_dash
             value_functions.append(v)
+            print(f"\t\tImproving policy (one step lookahead)...")
             pi_dash = self.policy_improvement(pi, v, discount)
-        v = self.policy_evaluation_iterative(pi_dash, error, discount)
-        # v = self.policy_evaluation_LA(pi_dash, discount)
+            if type == 1:
+                v_dash = self.policy_evaluation_iterative(pi_dash, error, discount)
+            elif type == 2:
+                v_dash = self.policy_evaluation_LA(pi_dash, discount)
+
+        if self.policy_unchanged(pi_dash, pi):
+            print("\t\tConverged due to unchanged policy...")
+        elif self.value_converged(v_dash, v, error):
+            print("\t\tConverged due to converged evaluated value function of policy...")
+
+        v = v_dash # evaluation of optimal policy pi_dash
         value_functions.append(v)
         print(f"\tPolicy Iteration converged in {iteration_num} iterations")
         return (pi_dash, value_functions)
@@ -496,23 +516,26 @@ def partA_2c():
             if tdp.state == tdp.goal_state:
                 break
 
-def partA_3b():
+def partA_3b(type):
+    '''
+        type 1 uses iterative policy evaluation, type 2 uses linear algebra to evaluate policy
+    '''
     print("\nRunning Policy Iteration for different discount factors...")
 
     grid = Grid(1)
     tdp = TaxiDomain(grid)
-    discount_values = [0.01, 0.1, 0.5, 0.8] # 0.99
+    discount_values = [0.01, 0.1, 0.5, 0.8, 0.99] # 0.01, 0.1, 0.5, 0.8, 0.99
     policy_losses_list = []
     for discount in discount_values:
         print(f"\tRunning for discount={discount}")
-        opt_policy, value_functions = tdp.policy_iteration(discount)
+        opt_policy, value_functions = tdp.policy_iteration(discount, type)
         opt_vf = value_functions[-1]
         policy_losses = []
         for vf in value_functions[:-1]:
             policy_loss = tdp.value_loss(vf, opt_vf)
             policy_losses.append(policy_loss)
         policy_losses_list.append(policy_losses)
-    print(opt_vf)
+    # print(opt_vf)
     # print(policy_losses_list)
 
     fig = plt.gcf()
@@ -523,11 +546,11 @@ def partA_3b():
         plt.plot(list(range(len(policy_losses))), policy_losses, label=f"Discount: {discount}")
     plt.xlabel("Iteration No.")
     plt.ylabel("Policy Loss from Optimal Policy")
-    plt.title("Policy Loss vs. Iteration No. as discount factor varies")
+    plt.title(f"Policy Loss vs. Iteration No. as discount factor varies [Type {type}]")
     plt.legend()
     plt.show()
 
-    fig_name = "PartA_3b.png"
+    fig_name = f"PartA_3b_type{type}.png"
     fig.savefig(fig_name, dpi=100)
 
     print(f"Plot '{fig_name}' generated...")
@@ -544,5 +567,12 @@ if __name__ == "__main__":
     #tdp.print_state()
     #partA_2a()
     #partA_2b()
-    partA_2c()
-    #partA_3b()
+    #partA_2c()
+    s1 = time.process_time()
+    partA_3b(1)
+    t1 = time.process_time() - s1
+    s2 = time.process_time()
+    partA_3b(2)
+    t2 = time.process_time() - s2
+    print(f"Time taken in Part A 3(b) using iterative policy evaluation = {t1} s")
+    print(f"Time taken in Part A 3(b) using linear algebra policy evaluation = {t2} s")
