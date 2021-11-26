@@ -873,6 +873,8 @@ def partB_3():
         passenger_loc = test_tdp.grid.depots[random.sample(ql.valid_passenger_depots, 1)[0]]
         taxi_loc = (random.randint(0,test_tdp.grid.size[1]-1), random.randint(0,test_tdp.grid.size[0]-1))
         test_tdp.state = (taxi_loc, passenger_loc, False)
+        test_tdp.last_action = ""
+        test_tdp.last_reward = ""
         # run this episode
         num_step = 0
         while not test_tdp.state == test_tdp.goal_state and num_step < 500:
@@ -882,6 +884,10 @@ def partB_3():
             action = policy[test_tdp.state]
             next_state, reward = test_tdp.take_action(test_tdp.state, action)
             test_tdp.state = next_state
+        # print last state
+        num_step += 1
+        print(f"\nStep No.: {num_step}")
+        test_tdp.print_state()
 
 def partB_4():
     grid = Grid(1)
@@ -973,18 +979,18 @@ def partB_5():
 
 
 if __name__ == "__main__":
-    #grid = Grid(1)
-    #tdp = TaxiDomain(grid)
-    #tdp.print_state()
-    #tdp.state, reward = tdp.take_action(tdp.state, "N")
-    #tdp.print_state()
-    #tdp.state, reward = tdp.take_action(tdp.state, "N")
-    #tdp.print_state()
-    #tdp.state, reward = tdp.take_action(tdp.state, "E")
-    #tdp.print_state()
-    #partA_2a()
-    #partA_2b()
-    #partA_2c()
+    # grid = Grid(1)
+    # tdp = TaxiDomain(grid)
+    # tdp.print_state()
+    # tdp.state, reward = tdp.take_action(tdp.state, "N")
+    # tdp.print_state()
+    # tdp.state, reward = tdp.take_action(tdp.state, "N")
+    # tdp.print_state()
+    # tdp.state, reward = tdp.take_action(tdp.state, "E")
+    # tdp.print_state()
+    # partA_2a()
+    # partA_2b()
+    # partA_2c()
     # s1 = time.process_time()
     # partA_3b(1)
     # t1 = time.process_time() - s1
@@ -998,6 +1004,6 @@ if __name__ == "__main__":
     # ql = Q_Learning(tdp, 0.25, 0.99, 0.1, False)
     # ql.learn(2000)
     # partB_2()
-    #partB_3()
-    partB_4()
-    #partB_5()
+    partB_3()
+    # partB_4()
+    # partB_5()
