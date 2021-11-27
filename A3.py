@@ -646,7 +646,7 @@ class Q_Learning:
         average_discounted_rewards = []
         episode_nums = []
         for episode in range(num_episodes):
-            # print(f"Episode no.: {episode}")
+            print(f"Episode no.: {episode}")
             self.initialize_episode()
             num_step = 0
             while tdp.state != tdp.goal_state and num_step < 500:
@@ -665,11 +665,8 @@ class Q_Learning:
                 # tdp.print_state()
                 # print(f"Q({tdp.state}, {a}) updated from {old_q_value} to {self.q_values[(tdp.state, a)]} by (1-{self.learning_rate})*{old_q_value}+{self.learning_rate}*[{reward}+{self.discount}*{max_q_next_state}]")
                 tdp.state = next_state
-            # if episode == 20:
-            #    print(len(self.q_values), self.q_values)
-            #    return
             if compute_rewards and episode!=0 and episode%20 == 0:
-                # print(f"\nEvaluating episode no.: {episode}\n")
+                print(f"\nEvaluating episode no.: {episode}\n")
                 policy = self.extract_policy(self.q_values)
                 dr = self.compute_discounted_rewards(policy, 20)
                 discounted_rewards.append(dr)
@@ -853,6 +850,12 @@ def partB_2():
 
     print(f"Plot '{fig_name}' generated...")
 
+    # print("\nAt the end...")
+    # print(f"Average Rewards for Q-Learning: {adrs1[-1]}")
+    # print(f"Average Rewards for Q-Learning with decaying exploration: {adrs2[-1]}")
+    # print(f"Average Rewards for SARSA-Learning: {adrs3[-1]}")
+    # print(f"Average Rewards for SARSA-Learning with decaying exploration: {adrs4[-1]}")
+
 def partB_3():
     alpha = 0.25
     gamma = 0.99
@@ -880,22 +883,22 @@ def partB_3():
         test_tdp.last_reward = ""
         # run this episode
         num_step = 0
-        print("Pasenger: ", passenger_loc)
+        print("Passenger: ", passenger_loc)
         print("Taxi: ", taxi_loc)
         acc_reward=0.0
         while not test_tdp.state == test_tdp.goal_state and num_step < 500:
             num_step += 1
-            #print(f"\nStep No.: {num_step}")
-            #test_tdp.print_state()
+            print(f"\nStep No.: {num_step}")
+            test_tdp.print_state()
             action = policy[test_tdp.state]
             next_state, reward = test_tdp.take_action(test_tdp.state, action)
             acc_reward+=reward*(gamma**(num_step-1))
             test_tdp.state = next_state
         # print last state
         num_step += 1
-        print("Total Reward: ", acc_reward)
         print(f"\nStep No.: {num_step}")
         test_tdp.print_state()
+        print("\nTotal Reward: ", acc_reward)
 
 def partB_4():
     grid = Grid(1)
@@ -967,8 +970,8 @@ def partB_5():
     grid = Grid(2)
     
     # Q-Learning with decaying epsilon greedy rate
-    tdp2 = TaxiDomain(grid)
-    ql2 = Q_Learning(tdp2, alpha, gamma, epsilon, True)
+    tdp = TaxiDomain(grid)
+    ql2 = Q_Learning(tdp, alpha, gamma, epsilon, True)
     ens2, drs2, adrs2 = ql2.learn(10000, True)
 
     fig = plt.gcf()
@@ -985,6 +988,50 @@ def partB_5():
 
     print(f"Plot '{fig_name}' generated...")
 
+    # extract policy
+    policy = ql2.extract_policy(ql2.q_values)
+    # test policy on 5 episodes
+    test_tdp = TaxiDomain(grid)
+    test_tdp.dest_depot = tdp.dest_depot
+    test_tdp.dest_loc = tdp.dest_loc
+    test_tdp.goal_state = tdp.goal_state
+
+    initial_states_list = []
+    rewards_list = []
+
+    # print(ql2.valid_passenger_depots)
+
+    for trial in range(7):
+        print("\n\nEpisode No. = "+str(trial)+"\n")
+        # initialize passenger and taxi locations
+        passenger_loc = test_tdp.grid.depots[random.sample(ql2.valid_passenger_depots, 1)[0]]
+        taxi_loc = (random.randint(0,test_tdp.grid.size[1]-1), random.randint(0,test_tdp.grid.size[0]-1))
+        test_tdp.state = (taxi_loc, passenger_loc, False)
+        test_tdp.last_action = ""
+        test_tdp.last_reward = ""
+        # store initial location
+        initial_states_list.append(test_tdp.state)
+        # run this episode
+        num_step = 0
+        acc_reward=0.0
+        while not test_tdp.state == test_tdp.goal_state and num_step < 500:
+            num_step += 1
+            print(f"\nStep No.: {num_step}")
+            test_tdp.print_state()
+            action = policy[test_tdp.state]
+            next_state, reward = test_tdp.take_action(test_tdp.state, action)
+            acc_reward+=reward*(gamma**(num_step-1))
+            test_tdp.state = next_state
+        # print last state
+        num_step += 1
+        print(f"\nStep No.: {num_step}")
+        test_tdp.print_state()
+        rewards_list.append(acc_reward)
+
+    print(f"\n\nInitial states: {initial_states_list}")
+    print(f"Discounted Rewards: {rewards_list}")
+    print(f"Average Discounted Reward: {sum(rewards_list)/len(rewards_list)}")
+
 
 if __name__ == "__main__":
     # grid = Grid(1)
@@ -996,9 +1043,16 @@ if __name__ == "__main__":
     # tdp.print_state()
     # tdp.state, reward = tdp.take_action(tdp.state, "E")
     # tdp.print_state()
+
     # partA_2a()
+
+    # s = time.process_time()
     # partA_2b()
+    # t = time.process_time() - s
+    # print(f"Time taken in Part A 2(b) = {t} s")
+
     # partA_2c()
+
     # s1 = time.process_time()
     # partA_3b(1)
     # t1 = time.process_time() - s1
@@ -1007,10 +1061,12 @@ if __name__ == "__main__":
     # t2 = time.process_time() - s2
     # print(f"Time taken in Part A 3(b) using iterative policy evaluation = {t1} s")
     # print(f"Time taken in Part A 3(b) using linear algebra policy evaluation = {t2} s")
+
     # grid = Grid(1)
     # tdp = TaxiDomain(grid)
     # ql = Q_Learning(tdp, 0.25, 0.99, 0.1, False)
     # ql.learn(2000)
+
     # partB_2()
     # partB_3()
     # partB_4()
